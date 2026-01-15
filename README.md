@@ -31,6 +31,25 @@ docker compose up --build
 ```
 
 ---
+## 📋 Business Logic & Assumptions
+
+To ensure predictable notification delivery, the following business rules have been implemented in this POC:
+
+### ✉️ Email Notifications
+* **Internal Routing Only**: Emails are exclusively sent to internal staff/users.
+* **Validation**: The system cross-references recipients against the `internal_users` database table. If a recipient is not found in this table, the email request is rejected to prevent unauthorized external communication.
+
+### 📱 SMS Notifications
+* **Dynamic Routing**: The SMS is sent to the `mobileNumber` provided directly in the API request payload.
+* **Optionality**: If the `mobileNumber` field is empty or null in the request, the SMS delivery step is skipped (no error is thrown, but the notification is not sent).
+
+### 🔔 Push Notifications
+* **Target Audience**: Scheduled Push notifications are designed only for Mobile Application users.
+* **Token Requirement**: Delivery requires a valid `deviceToken` to be present in the user profile or request.
+
+---
+
+---
 
 ## 🏗️ Production Roadmap & Tradeoffs
 
