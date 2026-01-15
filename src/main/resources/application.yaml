@@ -1,0 +1,138 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: willowlabs-notification-service
+
+  # 1. DATABASE CONFIGURATION
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  sql:
+    init:
+      mode: always
+
+  jpa:
+    defer-datasource-initialization: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        jdbc.batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  # 2. RABBITMQ CONFIG
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+  # 3. SPRING CLOUD STREAM CONFIG
+  cloud:
+    function:
+      definition: pushConsumer;emailConsumer;smsConsumer
+
+    stream:
+      bindings:
+        # PRODUCER
+        notification-out-0:
+          destination: notification-exchange
+          contentType: application/json
+
+        # PUSH CONSUMER
+        pushConsumer-in-0:
+          destination: notification-push
+          group: push-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 2000
+            back-off-multiplier: 2.0
+            back-off-max-interval: 10000
+
+        # EMAIL CONSUMER
+        emailConsumer-in-0:
+          destination: notification-email
+          group: email-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 2000
+            back-off-multiplier: 2.0
+            back-off-max-interval: 10000
+
+        # SMS CONSUMER
+        smsConsumer-in-0:
+          destination: notification-sms
+          group: sms-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 2000
+            back-off-multiplier: 2.0
+            back-off-max-interval: 10000
+
+      rabbit:
+        bindings:
+          notification-out-0:
+            producer:
+              exchangeType: topic
+              routingKeyExpression: headers.routingKey
+
+          pushConsumer-in-0:
+            consumer:
+              exchangeType: topic
+              bindingRoutingKey: notification.push
+              autoBindDlq: true
+              republishToDlq: true
+
+          emailConsumer-in-0:
+            consumer:
+              exchangeType: topic
+              bindingRoutingKey: notification.email
+              autoBindDlq: true
+              republishToDlq: true
+
+          smsConsumer-in-0:
+            consumer:
+              exchangeType: topic
+              bindingRoutingKey: notification.sms
+              autoBindDlq: true
+              republishToDlq: true
+
+  # 4. EMAIL CONFIGURATION (SMTP)
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+# 5. CUSTOM CONFIG
+notification:
+  push:
+    delay-minutes: 0
+
+logging:
+  level:
+    root: INFO
+    com.willowlabs.willowlabsnotifyservice: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.amqp: DEBUG
+
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
