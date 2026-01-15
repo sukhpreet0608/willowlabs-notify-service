@@ -122,7 +122,19 @@ spring:
           starttls:
             enable: false
 
-# 5. CUSTOM CONFIG
+# 5. ACTUATOR CONFIGURATION
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health, metrics"
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+
+# 6. CUSTOM CONFIG
 notification:
   push:
     delay-minutes: 0
