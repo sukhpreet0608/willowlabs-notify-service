@@ -1,0 +1,49 @@
+services:
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: willowlabs-lb
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+
+  # Your Spring Boot Application
+  app:
+    build: .
+    # This creates 2 separate containers running your code
+    deploy:
+      replicas: 2
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_MAIL_HOST=mailhog
+      # We keep H2, but we use a file-based path or a shared volume
+      # so both instances "see" the same DB file.
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:/data/testdb;DB_CLOSE_DELAY=-1;AUTO_SERVER=true
+    volumes:
+      - h2_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  h2_data:
