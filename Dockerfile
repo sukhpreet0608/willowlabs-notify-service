@@ -18,7 +18,7 @@ WORKDIR /app
 # Add a non-root user for security
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# --- ADDED CODE TO FIX DATABASE PERMISSIONS ---
+# --- FIX DATABASE PERMISSIONS ---
 RUN mkdir /data && chown spring:spring /data
 # -----------------------------------------------
 

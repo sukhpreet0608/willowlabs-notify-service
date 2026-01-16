@@ -10,16 +10,16 @@ services:
     depends_on:
       - app
 
-  # Your Spring Boot Application
+  # Spring Boot Application configuration
   app:
     build: .
-    # This creates 2 separate containers running your code
+    # This creates 2 separate containers running the code
     deploy:
       replicas: 2
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_MAIL_HOST=mailhog
-      # We keep H2, but we use a file-based path or a shared volume
+      # Use a file-based path or a shared volume
       # so both instances "see" the same DB file.
       - SPRING_DATASOURCE_URL=jdbc:h2:file:/data/testdb;DB_CLOSE_DELAY=-1;AUTO_SERVER=true
     volumes:

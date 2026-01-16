@@ -117,7 +117,6 @@ Implement **Resilience4j** to provide **Circuit Breakers** and **Exponential Bac
 Lack of visibility makes production debugging difficult.
 
 **Proposed Fix:**
-- Enable **Spring Boot Actuator**
 - Export metrics to **Prometheus** and visualize using **Grafana**
 - Implement **structured JSON logging** and ship logs to an **ELK Stack (Elasticsearch, Logstash, Kibana)**
 
