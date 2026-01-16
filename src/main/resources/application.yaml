@@ -137,7 +137,7 @@ management:
 # 6. CUSTOM CONFIG
 notification:
   push:
-    delay-minutes: 0
+    delay-minutes: 2
 
 logging:
   level:

@@ -17,6 +17,7 @@ public class NotificationController {
     /**
      * Use Case 1: Subscription (Trigger Internal Email)
      * Use Case 2: Scheduled Push (Targeted Mobile User)
+     * Use Case 3: Subscription users SMS
      */
     @PostMapping
     public ResponseEntity<String> createNotification(@Valid @RequestBody NotificationRequest request) {

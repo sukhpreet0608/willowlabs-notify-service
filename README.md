@@ -29,7 +29,35 @@ cd willowlabs-notify-service
 ```bash
 docker compose up --build
 ```
+---
 
+## 🔍 Access Local Consoles
+
+### 🐰 RabbitMQ Management Console
+- URL: http://localhost:15672
+- Username: guest
+- Password: guest
+
+Used to inspect queues, exchanges, and message flow.
+
+---
+
+### 📧 MailHog Console
+- URL: http://localhost:8025
+
+Used to view all outgoing emails in local development.
+
+---
+
+### 🗄️ H2 Database Console
+- URL: http://localhost:8080/h2-console
+- JDBC URL: jdbc:h2:file:/data/notify-db
+- Username: sa
+- Password: (empty)
+
+Used to inspect notification records and statuses.
+
+---
 ---
 ## 📋 Business Logic & Assumptions
 
@@ -44,7 +72,7 @@ To ensure predictable notification delivery, the following business rules have b
 * **Optionality**: If the `mobileNumber` field is empty or null in the request, the SMS delivery step is skipped (no error is thrown, but the notification is not sent).
 
 ### 🔔 Push Notifications
-* **Target Audience**: Scheduled Push notifications are designed only for Mobile Application users.
+* **Target Audience**: Scheduled Push notifications (currently every 2 minutes and config driven) are designed only for Mobile Application users.
 * **Token Requirement**: Delivery requires a valid `deviceToken` to be present in the user profile or request.
 
 ---

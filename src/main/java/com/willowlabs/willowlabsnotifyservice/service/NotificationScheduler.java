@@ -46,12 +46,12 @@ public class NotificationScheduler {
             return;
         }
 
-        log.info("[Outbox Relay] Found {} notifications to process.", dueNotifications.size());
+        log.info("Due Notifications Found {} notifications to process.", dueNotifications.size());
         int successCount = 0;
         int failureCount = 0;
         for (Notification notification : dueNotifications) {
             try {
-                log.info("[Outbox Relay] Processing ID: {} | Channel: {} | Recipient: {}",
+                log.info("Due Notification Processing ID: {} | Channel: {} | Recipient: {}",
                         notification.getId(), notification.getChannel(), notification.getRecipient());
                 // Each call happens in its own fresh transaction
                 processor.processSingle(notification);
