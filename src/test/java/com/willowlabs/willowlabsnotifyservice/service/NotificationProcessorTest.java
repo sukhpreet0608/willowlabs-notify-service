@@ -34,7 +34,6 @@ class NotificationProcessorTest {
     @Test
     @DisplayName("Should send EMAIL notification with correct routing key and update status")
     void processSingle_Email_Success() {
-        // Arrange
         Notification notification = Notification.builder()
                 .id(100L)
                 .channel(ChannelType.EMAIL)
@@ -44,10 +43,8 @@ class NotificationProcessorTest {
 
         when(streamBridge.send(eq("notification-out-0"), any(Message.class))).thenReturn(true);
 
-        // Act
         processor.processSingle(notification);
 
-        // Assert: Verify StreamBridge was called with correct header
         ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(streamBridge).send(eq("notification-out-0"), messageCaptor.capture());
 
@@ -55,7 +52,6 @@ class NotificationProcessorTest {
         assertEquals("notification.email", sentMessage.getHeaders().get("routingKey"));
         assertEquals(notification, sentMessage.getPayload());
 
-        // Assert: Verify DB update
         assertEquals(NotificationStatus.SENT, notification.getStatus());
         assertNotNull(notification.getProcessedAt());
         verify(repository).save(notification);
@@ -64,7 +60,6 @@ class NotificationProcessorTest {
     @Test
     @DisplayName("Should send PUSH notification with correct routing key")
     void processSingle_Push_Success() {
-        // Arrange
         Notification notification = Notification.builder()
                 .id(101L)
                 .channel(ChannelType.PUSH)
@@ -73,10 +68,8 @@ class NotificationProcessorTest {
 
         when(streamBridge.send(anyString(), any(Message.class))).thenReturn(true);
 
-        // Act
         processor.processSingle(notification);
 
-        // Assert
         ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(streamBridge).send(anyString(), messageCaptor.capture());
         assertEquals("notification.push", messageCaptor.getValue().getHeaders().get("routingKey"));
@@ -85,7 +78,6 @@ class NotificationProcessorTest {
     @Test
     @DisplayName("Should throw exception and not update DB if StreamBridge fails")
     void processSingle_PublishFailure() {
-        // Arrange
         Notification notification = Notification.builder()
                 .id(500L)
                 .channel(ChannelType.SMS)
@@ -95,14 +87,12 @@ class NotificationProcessorTest {
         // Simulate StreamBridge returning false (failure to send)
         when(streamBridge.send(anyString(), any(Message.class))).thenReturn(false);
 
-        // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             processor.processSingle(notification);
         });
 
         assertTrue(exception.getMessage().contains("Failed to publish"));
 
-        // Verify DB was NOT updated/saved
         verify(repository, never()).save(any());
         assertNotEquals(NotificationStatus.SENT, notification.getStatus());
     }
