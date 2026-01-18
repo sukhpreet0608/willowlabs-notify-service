@@ -1,15 +1,13 @@
 package com.willowlabs.willowlabsnotifyservice.service;
 
 import com.willowlabs.willowlabsnotifyservice.dto.NotificationRequest;
-import com.willowlabs.willowlabsnotifyservice.model.ChannelType;
-import com.willowlabs.willowlabsnotifyservice.model.InternalUser;
-import com.willowlabs.willowlabsnotifyservice.model.Notification;
-import com.willowlabs.willowlabsnotifyservice.model.NotificationStatus;
+import com.willowlabs.willowlabsnotifyservice.model.*;
 import com.willowlabs.willowlabsnotifyservice.repository.InternalUserRepository;
 import com.willowlabs.willowlabsnotifyservice.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +16,7 @@ import java.util.List;
 
 /**
  * Orchestrates notification events using Transactional Outbox and Fan-out patterns.
- * Ensures reliable delivery of internal alerts and scheduled mobile pushes.
+ * Optimized with Concurrency Control for Multi-Instance Deployments.
  * @author Sukhpreet Khurana
  */
 @Service
@@ -28,6 +26,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final InternalUserRepository internalUserRepository;
+
     @Value("${notification.push.delay-minutes:0}")
     private int pushDelayMinutes;
 
@@ -35,27 +34,33 @@ public class NotificationService {
     public void createNotification(NotificationRequest request) {
         log.info("Processing notification request for user: {}", request.mobileUserName());
 
-        // 1. Conditional Internal Alert (Email)
-        if (request.notifyAdmins()) {
-            this.sendInternalAlert(request.mobileUserName());
+        try {
+            // 1. Conditional Internal Alert (Email)
+            if (request.notifyAdmins()) {
+                this.sendInternalAlert(request.mobileUserName());
+            }
+
+            // 2. Mobile Push Notification
+            this.sendScheduledPush(request);
+
+            // 3. Conditional SMS Notification
+            if (request.mobileNumber() != null && !request.mobileNumber().isBlank()) {
+                this.sendSms(request);
+            }
+
+            log.info("Transactional Outbox entries persisted successfully.");
+
+        } catch (ObjectOptimisticLockingFailureException e) {
+            // LOGIC: If another instance is processing the same request simultaneously,
+            // we catch the exception to prevent a transaction rollback from affecting the user.
+            log.warn("Concurrency conflict: Another instance is already processing notification for {}",
+                    request.mobileUserName());
         }
-
-        // 2. Mobile Push Notification
-        this.sendScheduledPush(request);
-
-        // 3. Conditional SMS Notification
-        if (request.mobileNumber() != null && !request.mobileNumber().isBlank()) {
-            this.sendSms(request);
-        }
-
-        log.info("Transactional Outbox entries persisted successfully for all applicable channels.");
     }
 
     public void sendInternalAlert(String userName) {
-// 1. Fetch all designated staff
         List<InternalUser> staffMembers = internalUserRepository.findAllByIsDesignatedRecipientTrue();
 
-        // 2. Map the staff list into a list of Notification entities
         List<Notification> notifications = staffMembers.stream()
                 .map(staff -> Notification.builder()
                         .recipient(staff.getEmail())
@@ -64,18 +69,17 @@ public class NotificationService {
                         .channel(ChannelType.EMAIL)
                         .status(NotificationStatus.PENDING)
                         .scheduledAt(LocalDateTime.now())
+                        .version(0) // Initialize version for new records
                         .build())
                 .toList();
 
-        // 3. Perform a single batch save
         if (!notifications.isEmpty()) {
             notificationRepository.saveAll(notifications);
-            log.info("Persisted {} EMAIL alerts to the Outbox table.", notifications.size());
+            log.info("Persisted {} EMAIL alerts with Version 0.", notifications.size());
         }
     }
 
     public void sendScheduledPush(NotificationRequest request) {
-        // PERSISTENCE FOR USE CASE 2
         notificationRepository.save(
                 Notification.builder()
                         .recipient(request.deviceToken())
@@ -84,6 +88,7 @@ public class NotificationService {
                         .channel(ChannelType.PUSH)
                         .status(NotificationStatus.SCHEDULED)
                         .scheduledAt(LocalDateTime.now().plusMinutes(pushDelayMinutes))
+                        .version(0) // Initialize version
                         .build()
         );
     }
@@ -95,10 +100,11 @@ public class NotificationService {
                         .content("Hello " + request.mobileUserName() + ", welcome to Willowlabs!")
                         .mobileUserName(request.mobileUserName())
                         .channel(ChannelType.SMS)
-                        .status(NotificationStatus.PENDING) // Usually SMS is sent immediately
+                        .status(NotificationStatus.PENDING)
                         .scheduledAt(LocalDateTime.now())
+                        .version(0) // Initialize version
                         .build()
         );
-        log.info("Persisted SMS notification to the Outbox for number: {}", request.mobileNumber());
+        log.info("Persisted SMS notification for: {}", request.mobileNumber());
     }
 }

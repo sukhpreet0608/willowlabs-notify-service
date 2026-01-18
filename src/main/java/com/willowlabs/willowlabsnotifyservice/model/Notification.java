@@ -24,6 +24,10 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // --- ADDED FOR OPTIMISTIC LOCKING ---
+    @Version
+    private Integer version;
+
     private String recipient;
 
     private String mobileUserName;
@@ -40,5 +44,4 @@ public class Notification {
 
     @Enumerated(EnumType.STRING)
     private NotificationStatus status;
-
 }

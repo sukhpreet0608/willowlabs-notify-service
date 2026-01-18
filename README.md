@@ -25,9 +25,14 @@ git clone https://github.com/sukhpreet0608/willowlabs-notify-service.git
 cd willowlabs-notify-service
 ```
 
-### 2. Run Docker Compose
+### 2. Start the app
 ```bash
 docker compose up --build
+```
+
+### 3. Shutting down app 
+```bash
+docker compose down -v
 ```
 ---
 
