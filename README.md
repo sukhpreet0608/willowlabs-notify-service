@@ -51,7 +51,7 @@ Used to view all outgoing emails in local development.
 
 ### 🗄️ H2 Database Console
 - URL: http://localhost:8080/h2-console
-- JDBC URL: jdbc:h2:file:/data/notify-db
+- JDBC URL: jdbc:h2:file:/data/testdb;DB_CLOSE_DELAY=-1;AUTO_SERVER=true
 - Username: sa
 - Password: (empty)
 
